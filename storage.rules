@@ -1,0 +1,73 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Images uploaded by users
+    match /images/{allPaths=**} {
+      // Allow authenticated users to upload images
+      allow write: if request.auth != null &&
+        request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+        request.resource.contentType.matches('image/.*'); // Only images
+      
+      // Allow anyone to read images
+      allow read: if true;
+    }
+    
+    // User avatars
+    match /avatars/{userId}/{allPaths=**} {
+      // Users can upload their own avatars
+      allow write: if request.auth != null &&
+        request.auth.uid == userId &&
+        request.resource.size < 5 * 1024 * 1024 && // 5MB limit
+        request.resource.contentType.matches('image/.*');
+      
+      // Anyone can view avatars
+      allow read: if true;
+    }
+    
+    // Item images
+    match /items/{itemId}/{allPaths=**} {
+      // Item creators can upload images for their items
+      allow write: if request.auth != null &&
+        request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+        request.resource.contentType.matches('image/.*');
+      
+      // Anyone can view item images
+      allow read: if true;
+    }
+    
+    // Outfit images
+    match /outfits/{outfitId}/{allPaths=**} {
+      // Outfit creators can upload images for their outfits
+      allow write: if request.auth != null &&
+        request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+        request.resource.contentType.matches('image/.*');
+      
+      // Anyone can view outfit images
+      allow read: if true;
+    }
+    
+    // Review images
+    match /reviews/{reviewId}/{allPaths=**} {
+      // Review authors can upload images for their reviews
+      allow write: if request.auth != null &&
+        request.resource.size < 5 * 1024 * 1024 && // 5MB limit
+        request.resource.contentType.matches('image/.*');
+      
+      // Anyone can view review images
+      allow read: if true;
+    }
+    
+    // Temporary uploads (for processing)
+    match /temp/{userId}/{allPaths=**} {
+      // Users can upload to their temp folder
+      allow write: if request.auth != null &&
+        request.auth.uid == userId &&
+        request.resource.size < 20 * 1024 * 1024; // 20MB limit
+      
+      // Users can read their own temp files
+      allow read: if request.auth != null && request.auth.uid == userId;
+      
+      // Auto-delete after 24 hours (handled by cloud functions)
+    }
+  }
+}
